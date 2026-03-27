@@ -286,13 +286,15 @@
       <div class="field">
         <label>청구 주소</label>
         <div style="display:flex;gap:8px;">
-          <input id="billing" type="text" placeholder="주소 검색 버튼을 눌러주세요" readonly style="flex:1;cursor:pointer;" onclick="searchAddress()">
+          <input id="billing" type="text" placeholder="주소 검색 후 직접 수정 가능 (예: 서울 강남구 테헤란로 123, 5층)" style="flex:1;">
           <button onclick="searchAddress()" style="padding:10px 14px;background:var(--accent);border:none;border-radius:7px;color:white;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;">🔍 주소 검색</button>
         </div>
+        <span class="hint">검색 후 층수·상세주소 직접 입력 가능</span>
       </div>
       <div class="field">
         <label>우편번호</label>
-        <input id="post" type="text" placeholder="주소 검색 시 자동 입력" readonly>
+        <input id="post" type="text" placeholder="주소 검색 시 자동 입력">
+        <span class="hint">직접 수정 가능</span>
       </div>
     </div>
     <div class="row">
@@ -352,7 +354,7 @@
     <div class="row">
       <div class="field">
         <label class="required">단가 (숫자)</label>
-        <input id="price_num" type="text" placeholder="예) ₩55,000,000" oninput="calcTotal()">
+        <input id="price_num" type="text" placeholder="예) 55,000,000" oninput="formatPriceInput(this);calcTotal()">
         <span class="hint">표시 형식 그대로 입력</span>
       </div>
       <div class="field">
@@ -380,7 +382,7 @@
     <div class="row">
       <div class="field">
         <label>계약금 (1대당)</label>
-        <input id="deposit" type="text" placeholder="예) 10,000,000" value="10,000,000" oninput="calcTotal()" onblur="formatDeposit()">
+        <input id="deposit" type="text" placeholder="예) 10,000,000" value="10,000,000" oninput="formatPriceInput(this);calcTotal()" >
         <span class="hint">수량 × 계약금 = 총 계약금 / 잔금 자동계산</span>
       </div>
     </div>
@@ -498,6 +500,7 @@
 </div>
 
 
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
 
 // 다음 주소 검색
@@ -507,26 +510,25 @@ function resetForm() {
 }
 
 function searchAddress() {
-  if (typeof daum === 'undefined' || !daum.Postcode) {
-    alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-    return;
-  }
-  var bg = document.getElementById('daum-postcode-bg');
-  var layer = document.getElementById('daum-postcode-layer');
-  layer.innerHTML = '';
   new daum.Postcode({
     oncomplete: function(data) {
       let addr = data.roadAddress || data.jibunAddress;
-      document.getElementById('billing').value = addr;
-      document.getElementById('post').value = data.zonecode;
+      const billingEl = document.getElementById('billing');
+      const postEl = document.getElementById('post');
+      billingEl.removeAttribute('readonly');
+      billingEl.removeAttribute('disabled');
+      postEl.removeAttribute('readonly');
+      postEl.removeAttribute('disabled');
+      billingEl.value = addr;
+      postEl.value = data.zonecode;
       document.getElementById('delivery').value = '상동';
-      closePostcode();
+      // 커서를 주소 끝으로 이동해 바로 수정 가능하도록
+      billingEl.focus();
+      billingEl.setSelectionRange(addr.length, addr.length);
     },
-    width: '100%',
-    height: '100%',
-    maxSuggestItems: 5
-  }).embed(layer);
-  bg.style.display = 'flex';
+    width: 500,
+    height: 600
+  }).open();
 }
 function closePostcode() {
   document.getElementById('daum-postcode-bg').style.display = 'none';
@@ -628,15 +630,27 @@ function numToKor(num) {
 }
 
 // ── 수량 × 단가 = 총액 자동계산 ──────────────────────────
+function formatPriceInput(el) {
+  const pos = el.selectionStart;
+  const oldLen = el.value.length;
+  const digits = el.value.replace(/[^0-9]/g, '');
+  if (digits === '') { el.value = ''; return; }
+  const formatted = parseInt(digits).toLocaleString('ko-KR');
+  el.value = formatted;
+  const newLen = el.value.length;
+  const newPos = Math.max(0, pos + (newLen - oldLen));
+  el.setSelectionRange(newPos, newPos);
+}
+
 function calcTotal() {
   const priceStr = document.getElementById('price_num').value.trim();
   const qty = parseInt(document.getElementById('qty').value) || 1;
-  const priceRaw = priceStr.replace(/[₩,\s]/g, '');
+  const priceRaw = priceStr.replace(/[^0-9]/g, '');
   const price = parseInt(priceRaw);
   if (!isNaN(price) && price > 0) {
     const total = price * qty;
     const depositEl = document.getElementById('deposit');
-    const depositRaw = depositEl ? depositEl.value.replace(/[₩,\s]/g, '') : '10000000';
+    const depositRaw = depositEl ? depositEl.value.replace(/[^0-9]/g, '') : '10000000';
     const depositPer = parseInt(depositRaw) || 10000000;
     const deposit = depositPer * qty;
     const balanceVal = total - deposit;
@@ -853,6 +867,5 @@ async function generateDocx() {
   }
 }
 </script>
-<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 </body>
 </html>
