@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candela 구매계약서 생성기</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface2: #f9fafd;
+    --border: #e4e8f3;
+    --accent: #3b7ef8;
+    --accent2: #6c4ff5;
+    --text: #1a1d2e;
+    --muted: #7a8099;
+    --success: #22b87a;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .logo-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e8e8f0, #9898b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .row.single {
+    grid-template-columns: 1fr;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  .required::after {
+    content: ' *';
+    color: #f76f6f;
+  }
+
+  input, textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 13px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    width: 100%;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.12);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #444458;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  select option {
+    background: var(--surface2);
+  }
+
+  .btn-generate {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius);
+    color: white;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    letter-spacing: 0.3px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+
+  .btn-generate:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  .btn-generate:active {
+    transform: translateY(0);
+  }
+
+  .hint {
+    font-size: 11px;
+    color: #555568;
+    margin-top: 4px;
+  }
+
+  .spec-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface2);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .spec-chip input { display: none; }
+  .spec-chip:hover { border-color: var(--accent); color: var(--text); }
+  .spec-chip:has(input:checked) {
+    background: rgba(79,142,247,0.18);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 18px 0;
+  }
+
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div style="position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;">
+  <span style="font-size:12px;font-weight:600;color:var(--accent);letter-spacing:1px;">CANDELA CONTRACT GENERATOR</span>
+  <button onclick="resetForm()" style="padding:6px 16px;background:transparent;border:1.5px solid var(--border);border-radius:20px;color:var(--muted);font-family:inherit;font-size:12px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🔄 전체 초기화</button>
+</div>
+<div class="container">
+  <header>
+    <div class="logo-tag">Syneron Candela Korea</div>
+    <h1>구매계약서 생성기</h1>
+    <p class="subtitle">입력 후 Word 파일(.docx)로 즉시 다운로드</p>
+  </header>
+
+  <!-- 기본 정보 -->
+  <div class="card">
+    <div class="card-title">기본 정보</div>
+    <div class="row">
+      <div class="field">
+        <label class="required">참조번호</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="refer_base" type="text" readonly style="flex:1;background:#eef0f6;color:#6b7080;cursor:default;">
+          <select id="refer_suffix" style="width:80px;flex-shrink:0;">
+            <option value="-01">-01</option>
+            <option value="-02">-02</option>
+            <option value="-03">-03</option>
+            <option value="-04">-04</option>
+            <option value="-05">-05</option>
+            <option value="-06">-06</option>
+            <option value="-07">-07</option>
+            <option value="-08">-08</option>
+            <option value="-09">-09</option>
+            <option value="-10">-10</option>
+            <option value="-11">-11</option>
+            <option value="-12">-12</option>
+            <option value="-13">-13</option>
+            <option value="-14">-14</option>
+            <option value="-15">-15</option>
+            <option value="-16">-16</option>
+            <option value="-17">-17</option>
+            <option value="-18">-18</option>
+            <option value="-19">-19</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="required">계약일자</label>
+        <input id="date" type="date">
+      </div>
+    </div>
+  </div>
+
+  <!-- 구매자 정보 -->
+  <div class="card">
+    <div class="card-title">구매자 정보</div>
+    <div class="row">
+      <div class="field">
+        <label class="required">구매자 (병원명)</label>
+        <input id="buyer" type="text" placeholder="예) 강남피부과의원">
+      </div>
+      <div class="field">
+        <label>원장명 (선택)</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="doctor" type="text" placeholder="예) 홍길동" style="flex:1;">
+          <span style="color:var(--muted);font-size:13px;white-space:nowrap;">원장님</span>
+        </div>
+        <span class="hint">이름만 입력하면 '원장님' 자동 추가</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>청구 주소</label>
+        <div style="display:flex;gap:8px;">
+          <input id="billing" type="text" placeholder="주소 검색 후 직접 수정 가능" style="flex:1;">
+          <button onclick="searchAddress()" style="padding:10px 14px;background:var(--accent);border:none;border-radius:7px;color:white;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;">🔍 주소 검색</button>
+        </div>
+        <span class="hint">검색 후 층수·상세주소 직접 입력 가능</span>
+      </div>
+      <div class="field">
+        <label>우편번호</label>
+        <input id="post" type="text" placeholder="주소 검색 시 자동 입력">
+        <span class="hint">직접 수정 가능</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>납품 장소</label>
+        <input id="delivery" type="text" placeholder="예) 강남피부과의원 (서울시 강남구)">
+        <span class="hint" style="cursor:pointer;color:var(--accent);" onclick="syncDelivery()">↑ 청구주소와 동일 (상동)</span>
+      </div>
+      <div class="field">
+        <label>전화번호</label>
+        <input id="phone" type="text" placeholder="예) 02-1234-5678">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>서명자 성명</label>
+        <input id="name" type="text" placeholder="예) 홍길동">
+      </div>
+      <div class="field">
+        <label>사업자등록번호</label>
+        <input id="biz" type="text" placeholder="숫자만 입력 (예: 7298701057)" oninput="formatBiz(this)" onblur="formatBiz(this)">
+      </div>
+    </div>
+  </div>
+
+  <!-- 제품 정보 -->
+  <div class="card">
+    <div class="card-title">제품 정보</div>
+    <div class="row single">
+      <div class="field">
+        <label class="required">제품명</label>
+        <select id="product">
+          <option value="">-- 제품 선택 --</option>
+          <option value="GentleMax Pro Plus">GentleMax Pro Plus</option>
+          <option value="GentleMax Pro Plus &amp; Cryo7">GentleMax Pro Plus &amp; Cryo7</option>
+          <option value="Vbeam Perfecta">Vbeam Perfecta</option>
+          <option value="PicoWay">PicoWay</option>
+          <option value="Nordlys">Nordlys</option>
+          <option value="Zimmer Cryo7">Zimmer Cryo7</option>
+          <option value="기타 (직접 입력)">기타 (직접 입력)</option>
+        </select>
+        <input id="product_custom" type="text" placeholder="제품명 직접 입력" style="margin-top:8px;display:none;">
+      </div>
+    </div>
+    <div class="row single">
+      <div class="field">
+        <label>워런티 / 보증 조건</label>
+        <input id="warranty" type="text" placeholder="제품 선택 시 자동 입력 (수정 가능)">
+      </div>
+    </div>
+    <div class="row single" id="vbp_spec_row" style="display:none;">
+      <div class="field">
+        <label>VBP 상세 (자동 입력)</label>
+        <input id="vbp_spec_display" type="text" readonly style="background:#eef0f6;color:#6b7080;">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="required">단가 (숫자)</label>
+        <input id="price_num" type="text" placeholder="예) 55,000,000" oninput="formatPriceInput(this);calcTotal()">
+        <span class="hint">표시 형식 그대로 입력</span>
+      </div>
+      <div class="field">
+        <label class="required">단가 (한글)</label>
+        <input id="price_kor" type="text" placeholder="예) 금오천오백만원정">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="required">수량</label>
+        <input id="qty" type="number" min="1" value="1" oninput="calcTotal()" style="width:120px;">
+        <span class="hint">기본값 1 (set/대 등 단위)</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="required">총액 (숫자)</label>
+        <input id="total_num" type="text" placeholder="단가 × 수량 자동 계산" readonly style="background:#eef4ff;color:#2563eb;cursor:default;">
+      </div>
+      <div class="field">
+        <label class="required">총액 (한글)</label>
+        <input id="total_kor" type="text" placeholder="자동 계산" readonly style="background:#eef4ff;color:#2563eb;cursor:default;">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>계약금 (1대당)</label>
+        <input id="deposit" type="text" placeholder="예) 10,000,000" value="10,000,000" oninput="formatPriceInput(this);calcTotal()">
+        <span class="hint">수량 × 계약금 = 총 계약금 / 잔금 자동계산</span>
+      </div>
+    </div>
+    <div class="row single">
+      <div class="field">
+        <label>잔금 (한글)</label>
+        <input id="balance" type="text" placeholder="자동 계산" readonly style="background:#eef4ff;color:#2563eb;cursor:default;">
+        <span class="hint">총액 - (계약금 × 수량) 자동계산</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 특약사항 -->
+  <div class="card">
+    <div class="card-title">특약사항</div>
+    <div class="row single">
+      <div class="field">
+        <label style="margin-bottom:8px;display:block;">세부 특약 선택 <span style="color:var(--muted);font-weight:400;">(해당 항목 클릭)</span></label>
+
+        <div id="spec-placeholder" style="padding:12px;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:12px;text-align:center;margin-bottom:12px;">
+          ↑ 위에서 제품을 선택하면 세부 특약 항목이 표시됩니다.
+        </div>
+
+        <!-- VBP -->
+        <div class="spec-group" data-product="Vbeam Perfecta" style="display:none;margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600;">Vbeam Perfecta</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="spec-chip"><input type="checkbox" class="spec-check vbp-default" data-text="DYE+PM : 3 Set" onchange="updateSpecification()" checked><span>DYE+PM : 3 Set</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check vbp-default" data-text="DCD : 3 box" onchange="updateSpecification()" checked><span>DCD : 3 box</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DYE+PM : 4 Set" onchange="updateSpecification()"><span>DYE+PM : 4 Set</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD : 4 box" onchange="updateSpecification()"><span>DCD : 4 box</span></label>
+          </div>
+        </div>
+
+        <!-- GentleMax Pro Plus -->
+        <div class="spec-group" data-product="GentleMax Pro Plus" style="display:none;margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600;">GentleMax Pro Plus</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Small handpiece (DCD type)" onchange="updateSpecification()"><span>Small HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Medium Handpiece (DCD type)" onchange="updateSpecification()"><span>Medium HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Large Handpiece (ACC type)" onchange="updateSpecification()"><span>Large HP (ACC)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Large Handpiece (DCD type)" onchange="updateSpecification()"><span>Large HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="All In One handpiece (ACC type)" onchange="updateSpecification()"><span>AIO HP (ACC)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="All In One handpiece (DCD type)" onchange="updateSpecification()"><span>AIO HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 1 box" onchange="updateSpecification()"><span>DCD 1 box</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 2 boxes" onchange="updateSpecification()"><span>DCD 2 boxes</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 3 boxes" onchange="updateSpecification()"><span>DCD 3 boxes</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 4 boxes" onchange="updateSpecification()"><span>DCD 4 boxes</span></label>
+          </div>
+        </div>
+
+        <!-- GentleMax Pro Plus & Cryo7 -->
+        <div class="spec-group" data-product="GentleMax Pro Plus &amp; Cryo7" style="display:none;margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600;">GentleMax Pro Plus &amp; Cryo7</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Small handpiece (DCD type)" onchange="updateSpecification()"><span>Small HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Medium Handpiece (DCD type)" onchange="updateSpecification()"><span>Medium HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Large Handpiece (ACC type)" onchange="updateSpecification()"><span>Large HP (ACC)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Large Handpiece (DCD type)" onchange="updateSpecification()"><span>Large HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="All In One handpiece (ACC type)" onchange="updateSpecification()"><span>AIO HP (ACC)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="All In One handpiece (DCD type)" onchange="updateSpecification()"><span>AIO HP (DCD)</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 1 box" onchange="updateSpecification()"><span>DCD 1 box</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 2 boxes" onchange="updateSpecification()"><span>DCD 2 boxes</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 3 boxes" onchange="updateSpecification()"><span>DCD 3 boxes</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD 4 boxes" onchange="updateSpecification()"><span>DCD 4 boxes</span></label>
+          </div>
+        </div>
+
+        <!-- PicoWay -->
+        <div class="spec-group" data-product="PicoWay" style="display:none;margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600;">PicoWay</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="Zoom Handpiece" onchange="updateSpecification()"><span>Zoom</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="1064 Resolve Handpiece" onchange="updateSpecification()"><span>1064 Resolve</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="532 Resolve Handpiece" onchange="updateSpecification()"><span>532 Resolve</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="532 Resolve Fusion Handpiece" onchange="updateSpecification()"><span>532 Resolve Fusion</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="730 Handpiece" onchange="updateSpecification()"><span>730 Handpiece</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="2023년 제조 장비" onchange="updateSpecification()"><span>2023년 제조</span></label>
+          </div>
+        </div>
+
+        <!-- Nordlys -->
+        <div class="spec-group" data-product="Nordlys" style="display:none;margin-bottom:12px;">
+          <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600;">Nordlys</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="spec-chip" style="opacity:0.5;"><input type="checkbox" class="spec-check" data-text="" disabled><span>항목 추가 예정</span></label>
+          </div>
+        </div>
+
+        <label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block;">직접 입력 (추가 특약)</label>
+        <textarea id="spec_manual" placeholder="추가 특약사항을 직접 입력하세요." style="min-height:60px;" oninput="updateSpecification()"></textarea>
+        <div style="margin-top:10px;">
+          <label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block;">최종 특약내용 (계약서에 들어갈 내용)</label>
+          <textarea id="specification" readonly style="min-height:70px;background:#eef4ff;color:#2563eb;cursor:default;" placeholder="위에서 항목 선택 또는 직접 입력하면 여기에 표시됩니다."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-generate" onclick="generateDocx()">📄 계약서 Word 파일 다운로드</button>
+</div>
+
+<!-- 카카오 주소검색 -->
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+function resetForm() {
+  if (!confirm('모든 입력 내용을 초기화할까요?')) return;
+  location.reload();
+}
+
+function searchAddress() {
+  new daum.Postcode({
+    oncomplete: function(data) {
+      let addr = data.roadAddress || data.jibunAddress;
+      const billingEl = document.getElementById('billing');
+      const postEl = document.getElementById('post');
+      billingEl.value = addr;
+      postEl.value = data.zonecode;
+      document.getElementById('delivery').value = '상동';
+      billingEl.focus();
+    },
+  }).open();
+}
+
+const VBP_WARRANTY = 'Warranty : 3 year';
+const DEFAULT_WARRANTY = 'Warranty : 1 year';
+const VBP_PRICE_NUM = '₩148,000,000';
+const VBP_PRICE_KOR = '일억사천팔백만원';
+const VBP_SPEC = 'DYE+PM : 3 Set, DCD: 3 box';
+
+document.getElementById('product').addEventListener('change', function() {
+  const val = this.value;
+  const custom = document.getElementById('product_custom');
+  const vbpRow = document.getElementById('vbp_spec_row');
+  const warranty = document.getElementById('warranty');
+
+  custom.style.display = val === '기타 (직접 입력)' ? 'block' : 'none';
+
+  if (val === 'Vbeam Perfecta') {
+    warranty.value = VBP_WARRANTY;
+    document.getElementById('price_num').value = VBP_PRICE_NUM;
+    document.getElementById('price_kor').value = VBP_PRICE_KOR;
+    document.getElementById('qty').value = 1;
+    calcTotal();
+    document.getElementById('balance').value = '일억삼천팔백만';
+    document.getElementById('vbp_spec_display').value = VBP_SPEC;
+    vbpRow.style.display = '';
+  } else {
+    if (val && val !== '기타 (직접 입력)') {
+      warranty.value = DEFAULT_WARRANTY;
+    } else {
+      warranty.value = '';
+    }
+    vbpRow.style.display = 'none';
+    document.getElementById('vbp_spec_display').value = '';
+  }
+
+  updateSpecGroups(val);
+});
+
+function updateSpecGroups(productVal) {
+  const val = (productVal === '기타 (직접 입력)')
+    ? document.getElementById('product_custom').value.trim()
+    : productVal;
+
+  document.querySelectorAll('.spec-group').forEach(g => {
+    g.style.display = 'none';
+    g.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
+  });
+
+  const placeholder = document.getElementById('spec-placeholder');
+
+  if (!val || val === '기타 (직접 입력)') {
+    placeholder.style.display = 'block';
+    updateSpecification();
+    return;
+  }
+
+  placeholder.style.display = 'none';
+
+  document.querySelectorAll('.spec-group').forEach(g => {
+    if (g.dataset.product === val) g.style.display = 'block';
+  });
+
+  updateSpecification();
+}
+
+function numToKor(num) {
+  if (!num || isNaN(num)) return '';
+  const digits = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+  const units  = ['', '십', '백', '천'];
+  const bigs   = ['', '만', '억', '조'];
+  let n = Math.floor(Math.abs(num));
+  if (n === 0) return '영원';
+  let result = '';
+  let bigIdx = 0;
+  while (n > 0) {
+    let chunk = n % 10000;
+    if (chunk > 0) {
+      let chunkStr = '';
+      for (let i = 0; i < 4; i++) {
+        let d = chunk % 10;
+        if (d > 0) chunkStr = (d === 1 && i > 0 ? '' : digits[d]) + units[i] + chunkStr;
+        chunk = Math.floor(chunk / 10);
+      }
+      result = chunkStr + bigs[bigIdx] + result;
+    }
+    bigIdx++;
+    n = Math.floor(n / 10000);
+  }
+  return result + '원';
+}
+
+function numToKorNoPrefix(num) {
+  if (!num || isNaN(num)) return '';
+  const digits = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+  const units  = ['', '십', '백', '천'];
+  const bigs   = ['', '만', '억', '조'];
+  let n = Math.floor(Math.abs(num));
+  if (n === 0) return '영';
+  let result = '';
+  let bigIdx = 0;
+  while (n > 0) {
+    let chunk = n % 10000;
+    if (chunk > 0) {
+      let chunkStr = '';
+      for (let i = 0; i < 4; i++) {
+        let d = chunk % 10;
+        if (d > 0) chunkStr = (d === 1 && i > 0 ? '' : digits[d]) + units[i] + chunkStr;
+        chunk = Math.floor(chunk / 10);
+      }
+      result = chunkStr + bigs[bigIdx] + result;
+    }
+    bigIdx++;
+    n = Math.floor(n / 10000);
+  }
+  return result;
+}
+
+function formatPriceInput(el) {
+  const pos = el.selectionStart;
+  const oldLen = el.value.length;
+  const digits = el.value.replace(/[^0-9]/g, '');
+  if (digits === '') { el.value = ''; return; }
+  const formatted = parseInt(digits).toLocaleString('ko-KR');
+  el.value = formatted;
+  const newLen = el.value.length;
+  const newPos = Math.max(0, pos + (newLen - oldLen));
+  el.setSelectionRange(newPos, newPos);
+}
+
+function calcTotal() {
+  const priceStr = document.getElementById('price_num').value.trim();
+  const qty = parseInt(document.getElementById('qty').value) || 1;
+  const priceRaw = priceStr.replace(/[^0-9]/g, '');
+  const price = parseInt(priceRaw);
+  if (!isNaN(price) && price > 0) {
+    const total = price * qty;
+    const depositEl = document.getElementById('deposit');
+    const depositRaw = depositEl ? depositEl.value.replace(/[^0-9]/g, '') : '10000000';
+    const depositPer = parseInt(depositRaw) || 10000000;
+    const deposit = depositPer * qty;
+    const balanceVal = total - deposit;
+    document.getElementById('price_kor').value = numToKor(price);
+    document.getElementById('total_num').value = '₩' + total.toLocaleString('ko-KR');
+    document.getElementById('total_kor').value = numToKor(total);
+    const balEl = document.getElementById('balance');
+    if (balEl) balEl.value = balanceVal > 0 ? numToKorNoPrefix(balanceVal) : '0';
+  } else {
+    document.getElementById('price_kor').value = '';
+    document.getElementById('total_num').value = '';
+    document.getElementById('total_kor').value = '';
+    const balEl = document.getElementById('balance');
+    if (balEl) balEl.value = '';
+  }
+}
+
+function updateSpecification() {
+  const checks = document.querySelectorAll('.spec-check');
+  const lines = [];
+  checks.forEach(cb => {
+    if (cb.checked) lines.push(cb.dataset.text);
+  });
+  const manual = document.getElementById('spec_manual').value.trim();
+  if (manual) lines.push(manual);
+  document.getElementById('specification').value = lines.join('\n');
+}
+
+const today = new Date();
+const pad = n => String(n).padStart(2, '0');
+const todayStr = today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate());
+const todayISO = today.toISOString().split('T')[0];
+
+document.getElementById('date').value = todayISO;
+document.getElementById('refer_base').value = todayStr;
+
+document.getElementById('date').addEventListener('change', function() {
+  const d = new Date(this.value + 'T00:00:00');
+  document.getElementById('refer_base').value =
+    d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate());
+});
+
+function syncDelivery() {
+  const billing = document.getElementById('billing').value.trim();
+  const post = document.getElementById('post').value.trim();
+  if (!billing) { alert('먼저 청구주소를 입력해주세요.'); return; }
+  document.getElementById('delivery').value = billing + (post ? ' (' + post + ')' : '');
+}
+
+function formatBiz(el) {
+  const digits = el.value.replace(/\D/g, '');
+  if (digits.length <= 3) {
+    el.value = digits;
+  } else if (digits.length <= 5) {
+    el.value = digits.slice(0, 3) + '-' + digits.slice(3);
+  } else {
+    el.value = digits.slice(0, 3) + '-' + digits.slice(3, 5) + '-' + digits.slice(5, 10);
+  }
+}
+
+function b64ToUint8(b64) {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf;
+}
+
+function getVal(id) {
+  return document.getElementById(id).value.trim();
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return y + '년 ' + parseInt(m) + '월 ' + parseInt(d) + '일';
+}
+
+// ── TEMPLATE_B64는 원본 파일에서 그대로 유지 ──
+const TEMPLATE_B64 = "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";
+
+async function generateDocx() {
+  const productVal = getVal('product') === '기타 (직접 입력)' ? getVal('product_custom') : getVal('product');
+  const isVBP = productVal === 'Vbeam Perfecta';
+  const warrantyRaw = getVal('warranty');
+  const warrantyFull = isVBP ? warrantyRaw + ' (' + VBP_SPEC + ')' : warrantyRaw;
+
+  const fields = {
+    refer: document.getElementById('refer_base').value + document.getElementById('refer_suffix').value,
+    date: formatDate(getVal('date')),
+    buyer: getVal('buyer'),
+    doctor: getVal('doctor') ? getVal('doctor') + ' 원장님' : '',
+    billing: getVal('billing'),
+    post: getVal('post'),
+    delivery: getVal('delivery'),
+    phone: getVal('phone'),
+    product: productVal,
+    warranty: warrantyFull,
+    price_num: getVal('price_num'),
+    price_kor: getVal('price_kor'),
+    qty: getVal('qty') || '1',
+    total_num: getVal('total_num'),
+    total_kor: getVal('total_kor'),
+    balance: getVal('balance'),
+    specification: getVal('specification') || '없음',
+    name: getVal('name'),
+    biz: getVal('biz'),
+  };
+
+  try {
+    const btn = document.querySelector('.btn-generate');
+    btn.textContent = '⏳ 생성 중...';
+    btn.disabled = true;
+
+    const bytes = b64ToUint8(TEMPLATE_B64);
+    const zip = await JSZip.loadAsync(bytes);
+
+    let xml = await zip.file('word/document.xml').async('string');
+
+    function escapeXml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    const replacements = {
+      '{{ refer }}': escapeXml(fields.refer),
+      '{{ date }}': escapeXml(fields.date),
+      '{{ buyer }}': escapeXml(fields.buyer),
+      '{{ doctor }}': escapeXml(fields.doctor),
+      '{{ billing }}': escapeXml(fields.billing),
+      '{{ post }}': escapeXml(fields.post),
+      '{{ delivery }}': escapeXml(fields.delivery),
+      '{{ phone }}': escapeXml(fields.phone),
+      '{{ product }}': escapeXml(fields.product),
+      '{{ warranty }}': escapeXml(fields.warranty),
+      '{{ price_num }}': escapeXml(fields.price_num),
+      '{{ price_kor }}': escapeXml(fields.price_kor),
+      '{{ total_num }}': escapeXml(fields.total_num),
+      '{{ total_kor }}': escapeXml(fields.total_kor),
+      '{{ balance }}': escapeXml(fields.balance),
+      '{{ specification }}': escapeXml(fields.specification),
+      '{{name}}': escapeXml(fields.name),
+      '{{ biz }}': escapeXml(fields.biz),
+    };
+
+    for (const [key, val] of Object.entries(replacements)) {
+      xml = xml.split(key).join(val);
+    }
+
+    zip.file('word/document.xml', xml);
+
+    const newBytes = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+    const dateStr = getVal('date').replace(/-/g, '');
+    const filename = dateStr + ' ' + fields.buyer + ' 구매계약서.docx';
+    const url = URL.createObjectURL(newBytes);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    btn.textContent = '✅ 다운로드 완료!';
+    setTimeout(() => {
+      btn.textContent = '📄 계약서 Word 파일 다운로드';
+      btn.disabled = false;
+    }, 2500);
+
+  } catch (e) {
+    alert('오류 발생: ' + e.message);
+    document.querySelector('.btn-generate').textContent = '📄 계약서 Word 파일 다운로드';
+    document.querySelector('.btn-generate').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
