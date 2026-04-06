@@ -571,7 +571,7 @@ function selectAddr(addr, zip) {
 
 const VBP_WARRANTY = 'Warranty : 3 year';
 const DEFAULT_WARRANTY = 'Warranty : 1 year';
-const VBP_PRICE_NUM = '₩148,000,000';
+const VBP_PRICE_NUM = '148,000,000';
 const VBP_PRICE_KOR = '일억사천팔백만원';
 
 document.getElementById('product').addEventListener('change', function() {
@@ -703,7 +703,7 @@ function calcTotal() {
     const deposit = depositPer * qty;
     const balanceVal = total - deposit;
     document.getElementById('price_kor').value = numToKor(price);
-    document.getElementById('total_num').value = '₩' + total.toLocaleString('ko-KR');
+    document.getElementById('total_num').value = total.toLocaleString('ko-KR');
     document.getElementById('total_kor').value = numToKor(total);
     const balEl = document.getElementById('balance');
     if (balEl) balEl.value = balanceVal > 0 ? numToKorNoPrefix(balanceVal) : '0';
