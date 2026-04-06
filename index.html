@@ -344,12 +344,7 @@
         <input id="warranty" type="text" placeholder="제품 선택 시 자동 입력 (수정 가능)">
       </div>
     </div>
-    <div class="row single" id="vbp_spec_row" style="display:none;">
-      <div class="field">
-        <label>VBP 상세 (자동 입력)</label>
-        <input id="vbp_spec_display" type="text" readonly style="background:#eef0f6;color:#6b7080;">
-      </div>
-    </div>
+
     <div class="row">
       <div class="field">
         <label class="required">단가 (숫자)</label>
@@ -409,8 +404,8 @@
         <div class="spec-group" data-product="Vbeam Perfecta" style="display:none;margin-bottom:12px;">
           <div style="font-size:11px;color:var(--accent);margin-bottom:8px;font-weight:600;">Vbeam Perfecta</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <label class="spec-chip"><input type="checkbox" class="spec-check vbp-default" data-text="DYE+PM : 3 Set" onchange="updateSpecification()" checked><span>DYE+PM : 3 Set</span></label>
-            <label class="spec-chip"><input type="checkbox" class="spec-check vbp-default" data-text="DCD : 3 box" onchange="updateSpecification()" checked><span>DCD : 3 box</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DYE+PM : 3 Set" onchange="updateSpecification()"><span>DYE+PM : 3 Set</span></label>
+            <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD : 3 box" onchange="updateSpecification()"><span>DCD : 3 box</span></label>
             <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DYE+PM : 4 Set" onchange="updateSpecification()"><span>DYE+PM : 4 Set</span></label>
             <label class="spec-chip"><input type="checkbox" class="spec-check" data-text="DCD : 4 box" onchange="updateSpecification()"><span>DCD : 4 box</span></label>
           </div>
@@ -510,12 +505,10 @@ const VBP_WARRANTY = 'Warranty : 3 year';
 const DEFAULT_WARRANTY = 'Warranty : 1 year';
 const VBP_PRICE_NUM = '₩148,000,000';
 const VBP_PRICE_KOR = '일억사천팔백만원';
-const VBP_SPEC = 'DYE+PM : 3 Set, DCD: 3 box';
 
 document.getElementById('product').addEventListener('change', function() {
   const val = this.value;
   const custom = document.getElementById('product_custom');
-  const vbpRow = document.getElementById('vbp_spec_row');
   const warranty = document.getElementById('warranty');
 
   custom.style.display = val === '기타 (직접 입력)' ? 'block' : 'none';
@@ -527,16 +520,12 @@ document.getElementById('product').addEventListener('change', function() {
     document.getElementById('qty').value = 1;
     calcTotal();
     document.getElementById('balance').value = '일억삼천팔백만';
-    document.getElementById('vbp_spec_display').value = VBP_SPEC;
-    vbpRow.style.display = '';
   } else {
     if (val && val !== '기타 (직접 입력)') {
       warranty.value = DEFAULT_WARRANTY;
     } else {
       warranty.value = '';
     }
-    vbpRow.style.display = 'none';
-    document.getElementById('vbp_spec_display').value = '';
   }
 
   updateSpecGroups(val);
@@ -724,9 +713,7 @@ const TEMPLATE_B64 = "UEsDBBQABgAIAAAAIQAA+JDA4AEAAJ8LAAATAAgCW0NvbnRlbnRfVHlwZX
 
 async function generateDocx() {
   const productVal = getVal('product') === '기타 (직접 입력)' ? getVal('product_custom') : getVal('product');
-  const isVBP = productVal === 'Vbeam Perfecta';
   const warrantyRaw = getVal('warranty');
-  const warrantyFull = isVBP ? warrantyRaw + ' (' + VBP_SPEC + ')' : warrantyRaw;
 
   const fields = {
     refer: document.getElementById('refer_base').value + document.getElementById('refer_suffix').value,
@@ -738,7 +725,7 @@ async function generateDocx() {
     delivery: getVal('delivery'),
     phone: getVal('phone'),
     product: productVal,
-    warranty: warrantyFull,
+    warranty: warrantyRaw,
     price_num: getVal('price_num'),
     price_kor: getVal('price_kor'),
     qty: getVal('qty') || '1',
