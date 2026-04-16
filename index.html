@@ -811,7 +811,7 @@ async function generateDocx() {
     total_num: getVal('total_num'),
     total_kor: getVal('total_kor'),
     balance: getVal('balance'),
-    deposit_kor: numToKorNoPrefix(parseInt(getVal('deposit').replace(/[^0-9]/g, '')) || 10000000),
+    deposit_kor: numToKorNoPrefix(parseInt(getVal('deposit').replace(/[^0-9]/g, '')) * getVal('qty') || 10000000),
     specification: getVal('specification') || '없음',
     name: getVal('name'),
     biz: getVal('biz'),
