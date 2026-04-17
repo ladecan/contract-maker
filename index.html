@@ -644,21 +644,37 @@ function numToKor(num) {
   const bigs   = ['', '만', '억', '조'];
   let n = Math.floor(Math.abs(num));
   if (n === 0) return '영원';
+
+  let chunks = [];
+  let tmp = n;
+  while (tmp > 0) { chunks.unshift(tmp % 10000); tmp = Math.floor(tmp / 10000); }
+
+  const topChunk = chunks[0];
+  const topBigIdx = chunks.length - 1;
+  const keepOneThousand = topBigIdx === 1 && topChunk === 1000;
+
   let result = '';
-  let bigIdx = 0;
-  while (n > 0) {
-    let chunk = n % 10000;
+  let bigIdx = chunks.length - 1;
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const chunk = chunks[ci];
+    const isTop = ci === 0;
     if (chunk > 0) {
       let chunkStr = '';
+      let ctmp = chunk;
       for (let i = 0; i < 4; i++) {
-        let d = chunk % 10;
-        if (d > 0) chunkStr = (d === 1 && i > 0 ? '' : digits[d]) + units[i] + chunkStr;
-        chunk = Math.floor(chunk / 10);
+        let d = ctmp % 10;
+        if (d > 0) {
+          let omit = false;
+          if (d === 1 && i >= 1 && i <= 2) omit = true;
+          if (d === 1 && i === 3) omit = !(isTop && keepOneThousand);
+          if (d === 1 && i === 0 && bigIdx === 1 && chunk < 10) omit = true;
+          chunkStr = (omit ? '' : digits[d]) + units[i] + chunkStr;
+        }
+        ctmp = Math.floor(ctmp / 10);
       }
-      result = chunkStr + bigs[bigIdx] + result;
+      result += chunkStr + bigs[bigIdx];
     }
-    bigIdx++;
-    n = Math.floor(n / 10000);
+    bigIdx--;
   }
   return result + '원';
 }
@@ -670,21 +686,38 @@ function numToKorNoPrefix(num) {
   const bigs   = ['', '만', '억', '조'];
   let n = Math.floor(Math.abs(num));
   if (n === 0) return '영';
+
+  let chunks = [];
+  let tmp = n;
+  while (tmp > 0) { chunks.unshift(tmp % 10000); tmp = Math.floor(tmp / 10000); }
+
+  const topChunk = chunks[0];
+  const topBigIdx = chunks.length - 1;
+  // 일천만 조건: 최상위가 만 단위이고 chunk=1000
+  const keepOneThousand = topBigIdx === 1 && topChunk === 1000;
+
   let result = '';
-  let bigIdx = 0;
-  while (n > 0) {
-    let chunk = n % 10000;
+  let bigIdx = chunks.length - 1;
+  for (let ci = 0; ci < chunks.length; ci++) {
+    const chunk = chunks[ci];
+    const isTop = ci === 0;
     if (chunk > 0) {
       let chunkStr = '';
+      let ctmp = chunk;
       for (let i = 0; i < 4; i++) {
-        let d = chunk % 10;
-        if (d > 0) chunkStr = (d === 1 && i > 0 ? '' : digits[d]) + units[i] + chunkStr;
-        chunk = Math.floor(chunk / 10);
+        let d = ctmp % 10;
+        if (d > 0) {
+          let omit = false;
+          if (d === 1 && i >= 1 && i <= 2) omit = true;
+          if (d === 1 && i === 3) omit = !(isTop && keepOneThousand);
+          if (d === 1 && i === 0 && bigIdx === 1 && chunk < 10) omit = true;
+          chunkStr = (omit ? '' : digits[d]) + units[i] + chunkStr;
+        }
+        ctmp = Math.floor(ctmp / 10);
       }
-      result = chunkStr + bigs[bigIdx] + result;
+      result += chunkStr + bigs[bigIdx];
     }
-    bigIdx++;
-    n = Math.floor(n / 10000);
+    bigIdx--;
   }
   return result;
 }
